@@ -11,4 +11,4 @@ It has two different outputs, one for HTTP and one for CURL
 
 HTTP: http://hostname/
 
-CURL: http://hostname/curl
+CURL: http://hostname/

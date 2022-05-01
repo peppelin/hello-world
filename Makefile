@@ -15,10 +15,6 @@ out:
 out/bin:
 	@mkdir -p out/bin
 
-.PHONY: git-hooks
-git-hooks: ## bind the defined hooks from local .githooks directory to git config
-	@git config --local core.hooksPath .githooks/
-
 ######################################################
 # go
 ######################################################
@@ -54,8 +50,12 @@ clean-bin: ## clean local binary folders
 clean-outputs: ## clean output folders out, vendor
 	@rm -rf out vendor api/proto/google api/proto/validate
 
+.PHONY: clean-docker
+clean-docker: ## clean previous docker images
+	@docker rmi -f hello-world
+
 .PHONY: clean
-clean: clean-bin clean-outputs ## clean up everything
+clean: clean-bin clean-outputs clean-docker ## clean up everything
 
 ######################################################
 # lint
@@ -95,6 +95,18 @@ build-linux: download out/bin ## build all binaries for linux
 .PHONY: build-arm
 build-arm: download out/bin ## build all binaries for arm
 	CGO_ENABLED=0 GOARCH=arm GOOS=linux go build -ldflags="-w -s" -o out/bin ./...
+
+######################################################
+# docker
+######################################################
+
+.PHONY: docker
+docker: clean build ## build docker image
+	@docker build -t hello-world .
+docker-linux: clean build-linux ## build docker image for linux
+	@docker build -t hello-world .
+docker-arm: clean build-arm ## build docker image for arm
+	@docker build -t hello-world .
 
 ######################################################
 # help

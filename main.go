@@ -13,6 +13,8 @@ const (
 	content = "Content-type"
 	html    = "text/html; charset=utf-8"
 	plain   = "text/plain"
+	startBlue	= "\033[46m\033[30m"
+	endBlue = "\033[0m"
 )
 
 func main() {
@@ -24,21 +26,16 @@ func main() {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(content, html)
-		w.Write([]byte("<h1>Hello world</h1>"))
-		w.Write([]byte("<strong>URI</strong>: " + r.URL.Path + "</br>"))
-		returnHostnameHTML(w)
-		returnEnvvarsHTML(w)
+		ua := r.UserAgent()
+		if strings.HasPrefix(ua,"curl") {
+			returnCURL(w,r)
+		}else{
+			returnHTML(w, r)
+		}
+		
 
 	})
-	http.HandleFunc("/curl/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello world\n"))
-		w.Write([]byte("\033[46m\033[30mURI\033[0m " + r.URL.Path + "\n"))
-		w.Write([]byte(returnHostname()))
-		w.Write([]byte(returnEnvvars()))
-
-	})
-
+	fmt.Println("Starting server at",s.Addr )
 	log.Fatal(s.ListenAndServe())
 }
 
@@ -49,17 +46,17 @@ func returnHostname() string {
 		fmt.Printf("Error getting the hostname: %v.\n", err)
 		return ("Error getting the hostname.\n")
 	}
-	return ("\033[46m\033[30mHOSTNAME\033[0m " + hostname + "\n")
+	return (startBlue + "HOSTNAME" + endBlue + " " + hostname + "\n")
 }
 
-//Loops though all the envvars with APP_ prefix and returns its value colored for bash
+// Loops though all the envvars with APP_ prefix and returns its value colored for bash
 func returnEnvvars() string {
-	var result = "\tENV VARS\n"
+	var result = "\n" + startBlue +"ENV VARS" + endBlue + "\n"
 	for _, env := range os.Environ() {
 		if strings.HasPrefix(env, "APP_") {
 			fmt.Println(env)
 			envSplit := strings.Split(env, "=")
-			result += "\033[46m\033[30m" + envSplit[0] + "\033[0m " + envSplit[1] + "\n"
+			result += startBlue + envSplit[0] + endBlue + envSplit[1] + "\n"
 		}
 	}
 	return (result)
@@ -77,7 +74,7 @@ func returnHostnameHTML(w http.ResponseWriter) {
 	}
 }
 
-//Loops though all the envvars with APP_ prefix and returns its value in HTML format
+// Loops though all the envvars with APP_ prefix and returns its value in HTML format
 func returnEnvvarsHTML(w http.ResponseWriter) {
 	var result = "<h2>ENV VARS</h2>"
 	for _, env := range os.Environ() {
@@ -88,4 +85,19 @@ func returnEnvvarsHTML(w http.ResponseWriter) {
 		}
 	}
 	w.Write([]byte(result))
+}
+
+func returnHTML(w http.ResponseWriter, r *http.Request){
+	w.Header().Set(content, html)
+	w.Write([]byte("<h1>Hello world</h1>"))
+	w.Write([]byte("<strong>URI</strong>: " + r.URL.Path + "</br>"))
+	returnHostnameHTML(w)
+	returnEnvvarsHTML(w)
+}
+
+func returnCURL(w http.ResponseWriter, r *http.Request){
+	w.Write([]byte("Hello world\n"))
+	w.Write([]byte(startBlue + "URI" + endBlue + " " + r.URL.Path + "\n"))
+	w.Write([]byte(returnHostname()))
+	w.Write([]byte(returnEnvvars()))
 }
